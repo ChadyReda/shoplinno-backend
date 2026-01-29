@@ -16,9 +16,7 @@ const app = express();
 const corsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = [
-      'https://shoplinno.vercel.app',
-      'http://127.0.0.1:5500',
-      'http://localhost:5500'
+      "https://shoplinno.vercel.app/"
     ];
     if (process.env.VERCEL || !origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
