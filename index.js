@@ -18,8 +18,9 @@ const app = express();
 
 app.use(cors({
   origin: [
-    "https://www.shoplinno.com/",
-    "https://shoplinno.vercel.app/",
+    "https://www.shoplinno.com",
+    "https://shoplinno.com",
+    "https://shoplinno.vercel.app",
     "http://localhost:5173"
   ],
   credentials: true
