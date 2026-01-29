@@ -18,7 +18,7 @@ const app = express();
 
 app.use(cors({
   origin: [
-    'https://shoplinno.com',
+    "https://www.shoplinno.com/",
     'http://localhost:5173'
   ],
   credentials: true
