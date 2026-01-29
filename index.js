@@ -16,7 +16,7 @@ const app = express();
 const corsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = [
-      "https://shoplinno.vercel.app/"
+      'https://shoplinno.vercel.app',
     ];
     if (process.env.VERCEL || !origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -62,7 +62,6 @@ apiRouter.get("/plans", async (req, res) => {
   }
 });
 
-
 // Health check
 apiRouter.get("/health", (req, res) => {
   res.json({
@@ -71,7 +70,74 @@ apiRouter.get("/health", (req, res) => {
   });
 });
 
-// Subscribe
+// Contact form endpoint
+apiRouter.post("/contact", async (req, res) => {
+  try {
+    const { name, email, message } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !message) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "All fields are required: name, email, message" 
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Invalid email format" 
+      });
+    }
+
+    // Generate a user ID for tracking (or use existing if user is logged in)
+    const userId = `contact_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Save to messages table
+    const { error: dbError } = await supabase
+      .from("messages")
+      .insert({
+        user_id: userId,
+        subject: `Contact Form: ${name}`,
+        message: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
+        type: "contact_form",
+        created_at: new Date().toISOString()
+      });
+
+    if (dbError) {
+      console.error("Database error saving contact form:", dbError);
+      return res.status(500).json({ 
+        success: false, 
+        error: "Failed to save contact message to database" 
+      });
+    }
+
+    // Optional: Send email notification (you'd need to set up email service)
+    // await sendContactEmail(name, email, message);
+
+    res.json({
+      success: true,
+      message: "Contact message received successfully",
+      data: {
+        name,
+        email,
+        messageId: userId,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (err) {
+    console.error("Contact form error:", err);
+    res.status(500).json({ 
+      success: false, 
+      error: "Server error processing contact form" 
+    });
+  }
+});
+
+// Subscribe endpoint
 apiRouter.post("/subscribe", async (req, res) => {
   try {
     const { user_id, plan_id, payment_method, customer_info } = req.body;
@@ -113,6 +179,25 @@ apiRouter.post("/subscribe", async (req, res) => {
     });
   } catch (err) {
     console.error("Server Error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Optional: Get all messages (for admin dashboard)
+apiRouter.get("/messages", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching messages:", error);
+      return res.status(500).json({ error: "Could not fetch messages." });
+    }
+
+    res.json({ success: true, messages: data });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
